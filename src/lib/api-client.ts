@@ -40,6 +40,7 @@ export class ApiClient {
       const duration = Date.now() - start;
 
       logger.info('api_call', { method, path, status: res.status, duration });
+      logger.debug('api_call_detail', { method, path, requestBody: body, responseBody: data });
 
       return { ok: res.ok, status: res.status, data };
     } catch (error) {
