@@ -1,3 +1,5 @@
+import { logger } from './logger.js';
+
 export interface ApiResponse {
   ok: boolean;
   status: number;
@@ -25,6 +27,8 @@ export class ApiClient {
       Authorization: authorization,
     };
 
+    const start = Date.now();
+
     try {
       const res = await fetch(url, {
         method,
@@ -33,9 +37,19 @@ export class ApiClient {
       });
 
       const data = await res.json().catch(() => null);
+      const duration = Date.now() - start;
+
+      logger.info('api_call', { method, path, status: res.status, duration });
 
       return { ok: res.ok, status: res.status, data };
-    } catch {
+    } catch (error) {
+      const duration = Date.now() - start;
+      logger.error('api_call_error', {
+        method,
+        path,
+        duration,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return { ok: false, status: 0, data: null };
     }
   }

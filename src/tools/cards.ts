@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ApiClient } from '../lib/api-client.js';
 import type { SessionState } from '../lib/session.js';
 import { formatCurrency, formatDate } from '../lib/format.js';
+import { withToolLogging } from '../lib/logger.js';
 
 function handleSessionExpired(state: SessionState) {
   state.botSessionToken = undefined;
@@ -19,7 +20,7 @@ function formatExpiry(expiry: string): string {
 export function registerCardTools(server: McpServer, state: SessionState, apiClient: ApiClient): void {
   server.registerTool('get_cards', {
     description: 'List all cards across the customer\'s accounts. Customer must be verified first.',
-  }, async () => {
+  }, withToolLogging('get_cards', async () => {
     if (!state.botSessionToken) {
       return {
         content: [{ type: 'text', text: 'Customer must be verified first. Use verify_start to begin identity verification.' }],
@@ -60,14 +61,14 @@ export function registerCardTools(server: McpServer, state: SessionState, apiCli
     }
 
     return { content: [{ type: 'text', text: lines.join('\n').trimEnd() }] };
-  });
+  }));
 
   server.registerTool('block_card', {
     description: 'Emergency card block. Only works on cards with ACTIVE status. Customer must be verified first.',
     inputSchema: {
       cardId: z.string().describe('Card UUID (from get_cards results)'),
     },
-  }, async ({ cardId }) => {
+  }, withToolLogging('block_card', async ({ cardId }) => {
     if (!state.botSessionToken) {
       return {
         content: [{ type: 'text', text: 'Customer must be verified first. Use verify_start to begin identity verification.' }],
@@ -91,5 +92,5 @@ export function registerCardTools(server: McpServer, state: SessionState, apiCli
     ].join('\n');
 
     return { content: [{ type: 'text', text }] };
-  });
+  }));
 }

@@ -1,11 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ApiClient } from '../lib/api-client.js';
 import type { SessionState } from '../lib/session.js';
+import { withToolLogging } from '../lib/logger.js';
 
 export function registerCustomerTools(server: McpServer, state: SessionState, apiClient: ApiClient): void {
   server.registerTool('get_customer', {
     description: 'Retrieve the verified customer\'s profile information. Customer must be verified first.',
-  }, async () => {
+  }, withToolLogging('get_customer', async () => {
     if (!state.botSessionToken) {
       return {
         content: [{ type: 'text', text: 'Customer must be verified first. Use verify_start to begin identity verification.' }],
@@ -39,5 +40,5 @@ export function registerCustomerTools(server: McpServer, state: SessionState, ap
     ].join('\n');
 
     return { content: [{ type: 'text', text }] };
-  });
+  }));
 }

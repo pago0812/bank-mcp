@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ApiClient } from '../lib/api-client.js';
 import type { SessionState } from '../lib/session.js';
+import { withToolLogging } from '../lib/logger.js';
 
 export function registerVerifyTools(server: McpServer, state: SessionState, apiClient: ApiClient): void {
   server.registerTool('verify_start', {
@@ -9,7 +10,7 @@ export function registerVerifyTools(server: McpServer, state: SessionState, apiC
     inputSchema: {
       phoneNumber: z.string().describe('Customer\'s phone number (e.g., "+15551234567")'),
     },
-  }, async ({ phoneNumber }) => {
+  }, withToolLogging('verify_start', async ({ phoneNumber }) => {
     const res = await apiClient.botTokenRequest('POST', '/api/v1/bot/verify/start', { phoneNumber });
 
     if (!res.ok) {
@@ -38,7 +39,7 @@ export function registerVerifyTools(server: McpServer, state: SessionState, apiC
     ].join('\n');
 
     return { content: [{ type: 'text', text }] };
-  });
+  }));
 
   server.registerTool('verify_answer', {
     description: 'Submit the customer\'s answer to a verification question. May need to be called multiple times until verification succeeds or fails.',
@@ -46,7 +47,7 @@ export function registerVerifyTools(server: McpServer, state: SessionState, apiC
       questionId: z.string().describe('ID of the question being answered'),
       answer: z.string().describe('Customer\'s answer'),
     },
-  }, async ({ questionId, answer }) => {
+  }, withToolLogging('verify_answer', async ({ questionId, answer }) => {
     if (!state.verificationSessionId) {
       return {
         content: [{ type: 'text', text: 'Customer must be verified first. Use verify_start to begin identity verification.' }],
@@ -113,5 +114,5 @@ export function registerVerifyTools(server: McpServer, state: SessionState, apiC
     ].join('\n');
 
     return { content: [{ type: 'text', text }] };
-  });
+  }));
 }

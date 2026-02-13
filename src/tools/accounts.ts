@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ApiClient } from '../lib/api-client.js';
 import type { SessionState } from '../lib/session.js';
 import { formatCurrency, formatDate, maskAccountNumber } from '../lib/format.js';
+import { withToolLogging } from '../lib/logger.js';
 
 function handleSessionExpired(state: SessionState) {
   state.botSessionToken = undefined;
@@ -14,7 +15,7 @@ function handleSessionExpired(state: SessionState) {
 export function registerAccountTools(server: McpServer, state: SessionState, apiClient: ApiClient): void {
   server.registerTool('get_accounts', {
     description: 'List all bank accounts for the verified customer. Customer must be verified first.',
-  }, async () => {
+  }, withToolLogging('get_accounts', async () => {
     if (!state.botSessionToken) {
       return {
         content: [{ type: 'text', text: 'Customer must be verified first. Use verify_start to begin identity verification.' }],
@@ -54,7 +55,7 @@ export function registerAccountTools(server: McpServer, state: SessionState, api
     }
 
     return { content: [{ type: 'text', text: lines.join('\n').trimEnd() }] };
-  });
+  }));
 
   server.registerTool('get_transactions', {
     description: 'Get recent transactions for a specific account. Customer must be verified first.',
@@ -63,7 +64,7 @@ export function registerAccountTools(server: McpServer, state: SessionState, api
       limit: z.number().min(1).max(50).optional().describe('Number of transactions to return (default: 10, max: 50)'),
       type: z.enum(['DEPOSIT', 'WITHDRAWAL', 'TRANSFER_IN', 'TRANSFER_OUT']).optional().describe('Filter by type: DEPOSIT, WITHDRAWAL, TRANSFER_IN, TRANSFER_OUT'),
     },
-  }, async ({ accountId, limit, type }) => {
+  }, withToolLogging('get_transactions', async ({ accountId, limit, type }) => {
     if (!state.botSessionToken) {
       return {
         content: [{ type: 'text', text: 'Customer must be verified first. Use verify_start to begin identity verification.' }],
@@ -110,5 +111,5 @@ export function registerAccountTools(server: McpServer, state: SessionState, api
     lines.push('', `Showing ${transactions.length} of ${total} total transactions.`);
 
     return { content: [{ type: 'text', text: lines.join('\n').trimEnd() }] };
-  });
+  }));
 }
